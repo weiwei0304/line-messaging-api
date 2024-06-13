@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -7,70 +6,31 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Line Messaging API constants
+// Line Messaging API 設定
 const CHANNEL_ACCESS_TOKEN =
   '+GUv+rFSwTf1xQJYwju9xd1CviHS5TS6XgUxuusYDZtUOgqaKGyywF68/al2fonGdzbeodUtv/E93rHdXnnQwP2KAjv3rruIK9xSC9ePOZFaEexQi+196ItEemA33B4CPMEt5ugIcoPFPU2J7UXEoQdB04t89/1O/w1cDnyilFU=';
 
-// Middleware
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Handle Line Messaging API webhook requests
-app.post('/webhook', async (req, res) => {
-  const events = req.body.events;
-
-  // Handle events
-  for (const event of events) {
-    if (event.type === 'follow') {
-      console.log('User ID:', event.source.userId);
-
-      // Send default message
-      await sendDefaultMessage(event.source.userId);
-    }
-    // Add other event handling as needed
-  }
-
-  res.sendStatus(200);
-});
-
-// Send default message
-const sendDefaultMessage = async (userId) => {
-  try {
-    const response = await axios.post(
-      'https://api.line.me/v2/bot/message/push',
-      {
-        to: userId,
-        messages: [
-          {
-            type: 'text',
-            text: '歡迎加入膂盟萌萌噠',
-          },
-        ],
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
-        },
-      }
-    );
-
-    console.log('Default message sent:', response.data);
-  } catch (error) {
-    console.error('Error sending default message:', error);
-  }
-};
-
-// Create Rich Menu
-const createRichMenu = async () => {
+// 建立 Rich Menu
+async function createRichMenu() {
   try {
     const richMenuData = {
-      size: { width: 2500, height: 1686 },
+      size: {
+        width: 2500,
+        height: 1686,
+      },
       selected: false,
       name: 'Test the default rich menu',
-      chatBarText: '我在測試一次',
+      chatBarText: '點我看更多',
       areas: [
         {
-          bounds: { x: 0, y: 0, width: 1666, height: 1686 },
+          bounds: {
+            x: 0,
+            y: 0,
+            width: 1666,
+            height: 1686,
+          },
           action: {
             type: 'uri',
             label: 'Tap area A',
@@ -78,7 +38,12 @@ const createRichMenu = async () => {
           },
         },
         {
-          bounds: { x: 1667, y: 0, width: 834, height: 843 },
+          bounds: {
+            x: 1667,
+            y: 0,
+            width: 834,
+            height: 843,
+          },
           action: {
             type: 'uri',
             label: 'Tap area B',
@@ -86,7 +51,12 @@ const createRichMenu = async () => {
           },
         },
         {
-          bounds: { x: 1667, y: 844, width: 834, height: 843 },
+          bounds: {
+            x: 1667,
+            y: 844,
+            width: 834,
+            height: 843,
+          },
           action: {
             type: 'uri',
             label: 'Tap area C',
@@ -113,10 +83,10 @@ const createRichMenu = async () => {
     console.error('Error creating Rich Menu:', error.response.data);
     throw error;
   }
-};
+}
 
-// Upload Rich Menu image
-const uploadRichMenuImage = async (richMenuId, imagePath) => {
+// 上傳 Rich Menu 圖片
+async function uploadRichMenuImage(richMenuId, imagePath) {
   try {
     if (!fs.existsSync(imagePath)) {
       throw new Error(`File not found: ${imagePath}`);
@@ -140,10 +110,10 @@ const uploadRichMenuImage = async (richMenuId, imagePath) => {
     console.error('Error uploading Rich Menu image:', error.response.data);
     throw error;
   }
-};
+}
 
-// Set Rich Menu as default
-const setRichMenuAsDefault = async (richMenuId) => {
+// 設置 Rich Menu 為預設
+async function setRichMenuAsDefault(richMenuId) {
   try {
     const response = await axios.post(
       `https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`,
@@ -161,13 +131,15 @@ const setRichMenuAsDefault = async (richMenuId) => {
     console.error('Error setting Rich Menu as default:', error.response.data);
     throw error;
   }
-};
+}
 
-// Setup Rich Menu
-const setupRichMenu = async () => {
+// 設置 Rich Menu
+async function setupRichMenu() {
   try {
+    // 建立 Rich Menu
     const richMenuId = await createRichMenu();
 
+    // 定義圖片路徑
     const imagePath = path.join(
       __dirname,
       '..',
@@ -176,17 +148,19 @@ const setupRichMenu = async () => {
       'richmenu.png'
     );
 
+    // 上傳 Rich Menu 圖片
     await uploadRichMenuImage(richMenuId, imagePath);
 
+    // 設置 Rich Menu 為預設
     await setRichMenuAsDefault(richMenuId);
 
     console.log('Rich Menu setup completed.');
   } catch (error) {
     console.error('Error setting up Rich Menu:', error);
   }
-};
+}
 
-// Start server and setup Rich Menu
+// 啟動應用程式
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   setupRichMenu();
